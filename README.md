@@ -1,0 +1,2 @@
+- Code originally from here (didn't see a gh link): https://www.hackster.io/KDPA/esp32-cam-video-surveillance-smart-camera-7f9a63
+    - That code is based off this example code: https://github.com/espressif/arduino-esp32/tree/master/libraries/ESP32/examples/Camera/CameraWebServer
