@@ -88,8 +88,6 @@ void setup()
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
-//ledcWrite(8, servo_pos);
-//ledcWrite(5, servo_pos1);
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -111,11 +109,12 @@ void setup()
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
+  config.frame_size = FRAMESIZE_UXGA;
   //init with high specs to pre-allocate larger buffers
   if(psramFound()){
-    config.frame_size = FRAMESIZE_QVGA;
     config.jpeg_quality = 10;
     config.fb_count = 2;
+    config.grab_mode = CAMERA_GRAB_LATEST;
   } else {
     config.frame_size = FRAMESIZE_QVGA;
     config.jpeg_quality = 12;
@@ -129,11 +128,14 @@ void setup()
     return;
   }
 
-  //drop down frame size for higher initial frame rate
   sensor_t * s = esp_camera_sensor_get();
-  s->set_framesize(s, FRAMESIZE_QVGA);
-  s->set_vflip(s, 1);
-  s->set_hmirror(s, 1);
+  // You may need to edit these or make another If statement depending on your model
+    if (s->id.PID == OV3660_PID) {
+      s->set_vflip(s, 1); // flip it back
+      s->set_brightness(s, 1); // up the brightness just a bit
+      s->set_saturation(s, -2); // lower the saturation
+  }
+  s->set_framesize(s, FRAMESIZE_UXGA);
   
   ledcSetup(7, 5000, 8);
   ledcAttachPin(4, 7);  //pin4 is LED
@@ -147,13 +149,6 @@ void setup()
       delay(500);
       if ((StartTime+10000) < millis()) break;
   } 
-
-  /*
-  int8_t power;
-  esp_wifi_set_max_tx_power(20);
-  esp_wifi_get_max_tx_power(&power);
-  Serial.printf("wifi power: %d \n",power); 
-  */
   
   startCameraServer();
 
@@ -180,7 +175,6 @@ void setup()
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // Do nothing. Everything is done in another task by the web server
   delay(1000);
-  //Serial.printf("RSSi: %ld dBm\n",WiFi.RSSI()); 
 }

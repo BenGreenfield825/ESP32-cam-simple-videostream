@@ -1,12 +1,5 @@
-
-
 #include <esp32-hal-ledc.h>
-int cspeed = 200;  
-int noStop = 1;
-int xcoord = 0;
-int servo_pos = 2250;
-int servo_pos1 = 6000;
-float speed_Coeff = (1 + (xcoord/50.0));
+bool lightToggle = false;
 
 #include "esp_http_server.h"
 #include "esp_timer.h"
@@ -224,156 +217,17 @@ static esp_err_t cmd_handler(httpd_req_t *req)
     sensor_t * s = esp_camera_sensor_get();
     int res = 0;
     
-    if(!strcmp(variable, "framesize")) 
-    {
-        Serial.println("framesize");
-        if(s->pixformat == PIXFORMAT_JPEG) res = s->set_framesize(s, (framesize_t)val);
+    Serial.println(variable);
+    if(!strcmp(variable, "light")) {
+        if(!lightToggle) {
+            ledcWrite(7, 10);
+            lightToggle = true;
+        }
+        else {
+            ledcWrite(7, 0);
+            lightToggle = false;
+        }
     }
-    else if(!strcmp(variable, "quality")) 
-    {
-      Serial.println("quality");
-      res = s->set_quality(s, val);
-    }
-    //Remote Control Car 
-    //Don't use channel 1 and channel 2
-    else if(!strcmp(variable, "flash")) 
-    {
-      ledcWrite(7,val);
-    }  
-    else if(!strcmp(variable, "speeds")) 
-    {
-      if      (val > 255) val = 255;
-      else if (val <   0) val = 0;       
-      cspeed = val*10;
-     
-    }   
-     else if(!strcmp(variable, "xcoord")) 
-    {
-      if      (val > 255) val = 255;
-     // else if (val <   0) val = 0;       
-      xcoord = val*50;
-      speed_Coeff = (1 + (xcoord/50.0));
-      
-    }     
-    else if(!strcmp(variable, "nostop")) 
-    {
-      noStop = val;
-    }             
-    else if(!strcmp(variable, "servo")) // 3250, 4875, 6500
-    {
-      if      (val > 645) val = 800;
-      else if (val < 326) val = 200;   
-    //  ledcWrite(8,10*val);
-      ledcWrite(5,10*val);
-
-    }     
-    else if(!strcmp(variable, "car")) {  
-
- if(val == 1){
- 
-  if      (servo_pos > 5000) servo_pos = 5000;
-      else if (servo_pos < 3260) servo_pos = 3260;   
-      servo_pos = servo_pos -= 1000;  
-
-ledcWrite(8,(3800-cspeed));
-  delay(25);
-    }
-    if(val == 0){
-      actstate = stp; 
-   ledcWrite(4,0);
-   
-        ledcWrite(8,5000);
-  
-    }
-    if(val == 2){
-
-if      (servo_pos > 5000) servo_pos = 8000;
-      else if (servo_pos < 3260) servo_pos = 3260;   
-         servo_pos = servo_pos += 1000;  
- 
-  ledcWrite(8, (5600+cspeed));
-  delay(25);
-    }
-  
-    if(val == 3){
- if      (servo_pos > 6500) servo_pos = 6500;
- if      (servo_pos1 > 6500) servo_pos1 = 6500;
-      else if (servo_pos < 3260) servo_pos = 2250;   
-      servo_pos = servo_pos -= 1000;  
-      if (servo_pos1 < 3260) servo_pos1 = 2250; 
-      servo_pos1 = servo_pos1 -= 1000;  
- 
-ledcWrite(8,(5000-cspeed));
-  delay(25);
-    }
-
-    if(val == 4){
- if      (servo_pos > 6500) servo_pos = 6500;
- if      (servo_pos1 > 6500) servo_pos1 = 6500;
-      else if (servo_pos < 3260) servo_pos = 2250;   
-      servo_pos = servo_pos -= 1000;  
-      if (servo_pos1 < 3260) servo_pos1 = 2250; 
-      servo_pos1 = servo_pos1 += 1000;  
-ledcWrite(8,(5000-cspeed));
-  delay(25);
-    }
-
-    if(val == 5){
- 
-  if      (servo_pos1 > 5000) servo_pos1 = 8000;
-      else if (servo_pos1 < 3260) servo_pos1 = 3260; 
-      servo_pos1 = servo_pos1 += 1000;  
- 
-  ledcWrite(5,(5000+xcoord));
-  delay(25); 
-    }
-
-    if(val == 6){
-        if      (servo_pos1 > 6500) servo_pos1 = 6500;
-      else if (servo_pos1 < 3260) servo_pos1 = 5000; 
-       servo_pos1 = servo_pos1 -= 1000;  
- 
- ledcWrite(5,(5000-xcoord));
-  delay(25);
-    }
-
-    if(val == 7){
-       if      (servo_pos > 6500) servo_pos = 6500;
-      if      (servo_pos1 > 6500) servo_pos1 = 6500;
-      else if (servo_pos1 < 3260) servo_pos1 = 2250; 
-     servo_pos1 = servo_pos1 += 1000;
-      if (servo_pos < 3260) servo_pos = 2250; 
-         servo_pos = servo_pos += 1000;  
-        
- ledcWrite(8,(5000+cspeed));      
-  delay(25);
-    }
-
-    if(val == 8){
- if      (servo_pos > 6500) servo_pos = 6500;
-      if      (servo_pos1 > 6500) servo_pos1 = 6500;
-      else if (servo_pos1 < 3260) servo_pos1 = 2250; 
-     servo_pos1 = servo_pos1 -= 1000;
-      if (servo_pos < 3260) servo_pos = 2250; 
-         servo_pos = servo_pos += 1000;  
-        
- ledcWrite(8,(5000+cspeed));   
-  delay(25);
-    }
-
-if (noStop!=1) 
-      {
-        ledcWrite(3, 0);
-        ledcWrite(4, 0);  
-        ledcWrite(5, 0);  
-        ledcWrite(6, 0);
-      }      
-
-
-
-
-    }
-
     else 
     { 
       Serial.println("variable");
@@ -384,10 +238,6 @@ if (noStop!=1)
 
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     return httpd_resp_send(req, NULL, 0);
-
-
-
-    
 }
 
 
@@ -436,11 +286,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
                 <tr><td></td><td align="center" colspan="2"></br></tr>
                 <tr><td></td><td align="center" colspan="2"></br></tr>
                 <tr><td></td><td align="center" colspan="2"></br></tr>
-                <tr><td>Flash</td><td align="center" colspan="2"><input type="range" id="flash" min="0" max="255" value="0" onchange="try{fetch(document.location.origin+'/control?var=flash&val='+this.value);}catch(e){}"><td></td></tr>
-                <tr><td>Resolution</td><td align="center" colspan="2"><input type="range" id="framesize" min="0" max="6" value="5" onchange="try{fetch(document.location.origin+'/control?var=framesize&val='+this.value);}catch(e){}"><td></td></tr>
-                <tr><td>Quality</td><td align="center" colspan="2"><input type="range" id="quality" min="10" max="63" value="10" onchange="try{fetch(document.location.origin+'/control?var=quality&val='+this.value);}catch(e){}"><td></td></tr>
-                
-               
+                <tr><td>Light</td><td align="center" colspan="2"><input type="button" id="light" value="Toggle Light" onClick="try{fetch(document.location.origin+'/control?var=light&val='+this.value);}catch(e){}"><td></td></tr>       
                 </table>
             </section>         
         </section>
