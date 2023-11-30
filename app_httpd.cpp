@@ -1,13 +1,11 @@
 #include <esp32-hal-ledc.h>
-bool lightToggle = false;
-
 #include "esp_http_server.h"
 #include "esp_timer.h"
 #include "esp_camera.h"
 #include "img_converters.h"
 #include "Arduino.h"
 
-//#include <dl_lib.h>
+bool lightToggle = false;
 
 typedef struct {
         httpd_req_t *req;
@@ -21,6 +19,11 @@ static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %
 
 httpd_handle_t stream_httpd = NULL;
 httpd_handle_t camera_httpd = NULL;
+
+static void turnFlashOff() {
+    lightToggle = false;
+    ledcWrite(7, 0);
+}
 
 static size_t jpg_encode_stream(void * arg, size_t index, const void* data, size_t len){
     jpg_chunking_t *j = (jpg_chunking_t *)arg;
@@ -69,39 +72,12 @@ static esp_err_t capture_handler(httpd_req_t *req){
         return res;
     }
 
-   // dl_matrix3du_t *image_matrix = dl_matrix3du_alloc(1, fb->width, fb->height, 3);
-//    if (!image_matrix) {
         esp_camera_fb_return(fb);
         Serial.println("dl_matrix3du_alloc failed");
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
 
-//    out_buf = image_matrix->item;
-//    out_len = fb->width * fb->height * 3;
-//    out_width = fb->width;
-//    out_height = fb->height;
-
-//    s = fmt2rgb888(fb->buf, fb->len, fb->format, out_buf);
-//    esp_camera_fb_return(fb);
-//    if(!s){
-//        dl_matrix3du_free(image_matrix);
-//        Serial.println("to rgb888 failed");
-//        httpd_resp_send_500(req);
-//        return ESP_FAIL;
-//    }
-
-//    jpg_chunking_t jchunk = {req, 0};
-//    s = fmt2jpg_cb(out_buf, out_len, out_width, out_height, PIXFORMAT_RGB888, 90, jpg_encode_stream, &jchunk);
-//    dl_matrix3du_free(image_matrix);
-//    if(!s){
- //       Serial.println("JPEG compression failed");
- //       return ESP_FAIL;
- //   }
-
-//    int64_t fr_end = esp_timer_get_time();
-//    return res;
-//}
 
 static esp_err_t stream_handler(httpd_req_t *req){
     camera_fb_t * fb = NULL;
@@ -109,7 +85,6 @@ static esp_err_t stream_handler(httpd_req_t *req){
     size_t _jpg_buf_len = 0;
     uint8_t * _jpg_buf = NULL;
     char * part_buf[64];
-  //  dl_matrix3du_t *image_matrix = NULL;
 
     static int64_t last_frame = 0;
     if(!last_frame) {
@@ -161,6 +136,7 @@ static esp_err_t stream_handler(httpd_req_t *req){
             _jpg_buf = NULL;
         }
         if(res != ESP_OK){
+            turnFlashOff(); // turn the flash off when leaving page or turning stream off
             break;
         }
         int64_t fr_end = esp_timer_get_time();
@@ -220,12 +196,11 @@ static esp_err_t cmd_handler(httpd_req_t *req)
     Serial.println(variable);
     if(!strcmp(variable, "light")) {
         if(!lightToggle) {
-            ledcWrite(7, 10);
+            ledcWrite(7, 30);
             lightToggle = true;
         }
         else {
-            ledcWrite(7, 0);
-            lightToggle = false;
+            turnFlashOff();
         }
     }
     else 
