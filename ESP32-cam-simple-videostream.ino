@@ -7,6 +7,14 @@
 
 const char *ssid = SSID;
 const char *password = PASSWORD;
+// Optional settings: Configure these if you want your camera to use a static IP
+bool useStaticIP = false;
+IPAddress local_IP(192, 168, 1, 46);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 0, 0);
+IPAddress primaryDNS(8, 8, 8, 8);
+IPAddress secondaryDNS(8, 8, 4, 4);
+
 unsigned long previousMillis = 0;
 const long interval = 60000;
 
@@ -109,7 +117,10 @@ void setup()
   config.pin_sscb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 20000000;
+  // NOTE: The ESP32-cam supports up to 20mhz, but this causes very bad performance due to interfence (see readme).
+  //       Using 8mhz seems to be the highest clock speed that doesn't tank performance. Feel free to try 20mhz
+  //       on your board to see if you get better results!
+  config.xclk_freq_hz = 8000000;
   config.pixel_format = PIXFORMAT_JPEG;
   config.frame_size = FRAMESIZE_UXGA;
   // init with high specs to pre-allocate larger buffers
@@ -144,11 +155,17 @@ void setup()
   }
   // Set default camera framesize here
   s->set_framesize(s, FRAMESIZE_HD);
-  // s->set_framesize(s, FRAMESIZE_SVGA);
 
   ledcSetup(7, 5000, 8);
   ledcAttachPin(4, 7); // pin4 is LED
 
+  if (useStaticIP)
+  {
+    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
+    {
+      Serial.println("STA Failed to configure");
+    }
+  }
   WiFi.begin(ssid, password);
   WiFi.setSleep(false);
 
@@ -179,13 +196,12 @@ void setup()
 void loop()
 {
   // Set light to be off every 60 seconds in case it is left on via the web UI
-  unsigned long currentMillis = millis(); 
+  unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval)
   {
-    previousMillis = currentMillis; 
+    previousMillis = currentMillis;
     ledcWrite(7, 0);
   }
 
   // Do nothing. Everything is done in another task by the web server
-  // delay(1000);
 }
