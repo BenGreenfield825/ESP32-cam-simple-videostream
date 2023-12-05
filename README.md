@@ -5,6 +5,11 @@
 - Capture still image or start a stream
 - Toggle the flash on and off
 
+## Power
+- For best results have at least 5V/2A input
+- While connected to WiFi, total power draw hovers around 160-170mA
+- While streaming, power draw is around 200mA
+
 ## Instructions
 - Create a file named `WifiCredentials.h` and add 
     ```

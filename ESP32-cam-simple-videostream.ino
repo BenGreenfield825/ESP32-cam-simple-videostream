@@ -8,7 +8,7 @@
 const char *ssid = SSID;
 const char *password = PASSWORD;
 // Optional settings: Configure these if you want your camera to use a static IP
-bool useStaticIP = false;
+bool useStaticIP = true;
 IPAddress local_IP(192, 168, 1, 46);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 0, 0);
@@ -90,6 +90,7 @@ const long interval = 60000;
 #endif
 
 void startCameraServer();
+void setupWiFi();
 
 void setup()
 {
@@ -159,6 +160,11 @@ void setup()
   ledcSetup(7, 5000, 8);
   ledcAttachPin(4, 7); // pin4 is LED
 
+  setupWiFi();
+}
+
+void setupWiFi()
+{
   if (useStaticIP)
   {
     if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
@@ -201,6 +207,13 @@ void loop()
   {
     previousMillis = currentMillis;
     ledcWrite(7, 0);
+  }
+
+  // Try reconnecting to WiFi if we ever disconnect
+  if (!WiFi.isConnected())
+  { // Checking for isConnected() does not seem to increase idle power draw, so might as well have it
+    Serial.println("WiFi disconnected! Attempting to reconnect.");
+    setupWiFi();
   }
 
   // Do nothing. Everything is done in another task by the web server
